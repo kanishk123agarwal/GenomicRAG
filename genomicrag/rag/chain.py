@@ -14,10 +14,19 @@ Question: {question}
 Answer:"""
 
 def build_chain(vectorstore, model_name: str = "gemini-1.5-flash"):
-    """
-    [Skeleton] Connect retriever to Google Gemini LLM and return RetrievalQA chain.
-    Will be fully implemented in Phase 4.
-    """
-    print(f"[Skeleton] Building RAG chain with model {model_name}...")
-    # Return None as placeholder for Phase 1
-    return None
+    """Connect retriever to Google Gemini LLM and return RetrievalQA chain."""
+    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
+
+    prompt = PromptTemplate(
+        template=PROMPT_TEMPLATE,
+        input_variables=["summaries", "question"]
+    )
+
+    chain = RetrievalQAWithSourcesChain.from_chain_type(
+        llm=llm,
+        retriever=retriever,
+        chain_type_kwargs={"prompt": prompt},
+        return_source_documents=True
+    )
+    return chain
