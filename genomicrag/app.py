@@ -8,9 +8,9 @@ from rag.chain import build_chain
 # Load environment variables from .env file
 load_dotenv()
 
-st.set_page_config(page_title="GenomicRAG (Phase 2)", page_icon="🔬", layout="wide")
+st.set_page_config(page_title="GenomicRAG (Phase 3)", page_icon="🔬", layout="wide")
 st.title("🔬 GenomicRAG")
-st.caption("Ask questions about your genetics research papers — Phase 2: PDF Loading & Chunking")
+st.caption("Ask questions about your genetics research papers — Phase 3: Embedding & FAISS Index")
 
 # Sidebar for uploading and indexing papers
 with st.sidebar:
@@ -23,8 +23,9 @@ with st.sidebar:
                 out.write(f.read())
         with st.spinner("Loading and chunking PDFs..."):
             chunks = load_and_chunk_documents("data/papers")
+        with st.spinner("Embedding chunks and building FAISS index..."):
             build_vectorstore(chunks)
-        st.success(f"Successfully loaded and chunked {len(uploaded_files)} paper(s) into {len(chunks)} chunks! (FAISS indexing will be implemented in Phase 3)")
+        st.success(f"Successfully loaded {len(uploaded_files)} paper(s), split into {len(chunks)} chunks, and built the FAISS vector index!")
 
 # Check if Gemini API key is set
 if not os.getenv("GOOGLE_API_KEY"):
@@ -56,4 +57,4 @@ if question:
             with st.expander(f"📄 {doc.metadata.get('source', 'Unknown')} — page {doc.metadata.get('page', '?')}"):
                 st.write(doc.page_content)
     else:
-        st.info("💬 [Phase 2] You asked: *\"" + question + "\"*. Once we implement Phase 3/4/5, you will get real answers from Gemini!")
+        st.info("💬 [Phase 3] You asked: *\"" + question + "\"*. Once we implement Phase 4/5 (RAG Chain & UI Integration), you will get real answers from Gemini!")
