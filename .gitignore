@@ -1,0 +1,25 @@
+# Virtual Environment
+genomicrag/venv/
+venv/
+
+# Environment Secrets
+genomicrag/.env
+.env
+
+# Vector store and local data
+genomicrag/vectorstore/
+genomicrag/data/
+vectorstore/
+data/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+genomicrag/rag/__pycache__/
+genomicrag/__pycache__/
+
+# OS specific files
+.DS_Store
+Thumbs.db
