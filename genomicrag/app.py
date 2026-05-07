@@ -10,7 +10,7 @@ from rag.chain import build_chain
 
 # Load environment variables from .env file relative to this script
 current_dir = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(current_dir, ".env"))
+load_dotenv(os.path.join(current_dir, ".env"), override=True)
 
 st.set_page_config(page_title="GenomicRAG", page_icon="🔬", layout="wide")
 
@@ -18,6 +18,11 @@ st.set_page_config(page_title="GenomicRAG", page_icon="🔬", layout="wide")
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    
+    /* Hide default Streamlit Deploy button */
+    .stDeployButton {
+        display: none !important;
+    }
     
     html, body, [class*="css"] {
         font-family: 'Plus Jakarta Sans', sans-serif;
@@ -142,8 +147,6 @@ with st.sidebar:
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key or api_key == "your_gemini_api_key_here":
         st.warning("⚠️ **GOOGLE_API_KEY is not configured.** Please add your Gemini API key to your `.env` file.")
-    else:
-        st.success("✅ Gemini API Key is configured.")
 
     st.header("Upload Papers")
     uploaded_files = st.file_uploader("Upload PDF(s)", type="pdf", accept_multiple_files=True)
@@ -281,15 +284,25 @@ if question:
                 st.markdown('<div class="source-header">Retrieved Context Sources</div>', unsafe_allow_html=True)
                 source_docs = result.get("source_documents", [])
                 if source_docs:
+                    # Group source documents by source_name and page_num to deduplicate expanders
+                    grouped_sources = {}
                     for doc in source_docs:
-                        source_name = os.path.basename(doc.metadata.get('source', 'Unknown'))
-                        page_num = doc.metadata.get('page', 0) + 1 # page metadata is 0-indexed, display as 1-indexed
+                        source_path = doc.metadata.get('source', 'Unknown')
+                        source_name = os.path.basename(source_path)
+                        page_num = doc.metadata.get('page', 0) + 1
                         
-                        # Clean chunk text to reflow paragraphs beautifully in UI
+                        key = (source_name, page_num)
+                        if key not in grouped_sources:
+                            grouped_sources[key] = []
+                        
                         cleaned_content = format_source_content(doc.page_content)
-                        
+                        if cleaned_content not in grouped_sources[key]:
+                            grouped_sources[key].append(cleaned_content)
+                    
+                    for (source_name, page_num), contents in grouped_sources.items():
+                        joined_content = "\n\n<hr style='border: 1px dashed rgba(128,128,128,0.25); margin: 15px 0;' />\n\n".join(contents)
                         with st.expander(f"📄 {source_name} — Page {page_num}"):
-                            st.markdown(f'<div class="source-box">{cleaned_content}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="source-box">{joined_content}</div>', unsafe_allow_html=True)
                 else:
                     st.info("No sources cited for this response.")
             except Exception as e:

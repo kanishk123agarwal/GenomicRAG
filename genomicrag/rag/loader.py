@@ -1,4 +1,5 @@
 import os
+import re
 from collections import defaultdict
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
@@ -38,7 +39,7 @@ def clean_document_text(text: str) -> str:
         cleaned_lines.append(line)
     return "\n".join(cleaned_lines)
 
-def load_and_chunk_documents(pdf_dir: str, chunk_size: int = 800, chunk_overlap: int = 150):
+def load_and_chunk_documents(pdf_dir: str, chunk_size: int = 2000, chunk_overlap: int = 400):
     """Load all PDFs from a directory, validate they are genetics papers, clean raw text, and split into chunks."""
     loader = PyPDFDirectoryLoader(pdf_dir)
     documents = loader.load()
@@ -56,7 +57,31 @@ def load_and_chunk_documents(pdf_dir: str, chunk_size: int = 800, chunk_overlap:
         filename = os.path.basename(source_path)
         
         if is_genetics_paper(sample_text):
-            for doc in docs:
+            # Sort pages sequentially to ensure correct reading order
+            sorted_docs = sorted(docs, key=lambda d: d.metadata.get("page", 0))
+            
+            references_found = False
+            for doc in sorted_docs:
+                if references_found:
+                    continue
+                
+                # Check for references section header
+                # Pattern matches standard references/bibliography titles on their own line
+                ref_match = re.search(
+                    r'(?:\n|^)\s*(?:\d+\.?\s+)?(References|REFERENCES|Bibliography|BIBLIOGRAPHY|Literature Cited|References and Notes|REFERENCES AND NOTES)\s*(?:\n|$)',
+                    doc.page_content
+                )
+                if ref_match:
+                    start_idx = ref_match.start()
+                    # Truncate content of this page at the references heading
+                    doc.page_content = doc.page_content[:start_idx].strip()
+                    if doc.page_content:
+                        doc.page_content = clean_document_text(doc.page_content)
+                        valid_documents.append(doc)
+                    references_found = True
+                    print(f"Trimming references section from {filename} starting on page {doc.metadata.get('page') + 1}")
+                    continue
+                
                 doc.page_content = clean_document_text(doc.page_content)
                 valid_documents.append(doc)
         else:
