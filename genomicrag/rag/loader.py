@@ -12,7 +12,7 @@ def is_genetics_paper(sample_text: str) -> bool:
     if not api_key or api_key == "your_gemini_api_key_here":
         return True # Failsafe default
     try:
-        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0, api_key=api_key)
         prompt = (
             "Analyze the following text snippet from the beginning of a research paper.\n"
             "Determine if this paper is related to genetics, genomics, DNA, RNA, CRISPR, gene editing, "

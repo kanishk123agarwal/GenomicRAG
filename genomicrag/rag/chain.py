@@ -6,6 +6,7 @@ from langchain_core.callbacks import CallbackManagerForRetrieverRun
 from langchain_core.documents import Document
 from typing import List, Any
 import re
+import os
 
 PROMPT_TEMPLATE = """You are a genetics research assistant. Use the provided context to answer the question.
 Provide a detailed, comprehensive, and well-structured explanation. Explain the background, molecular mechanisms, or clinical significance of the genetic concepts when relevant, using details from the provided context.
@@ -36,7 +37,8 @@ class GenomicRetriever(BaseRetriever):
 
 def build_chain(vectorstore, model_name: str = "gemini-2.5-flash", search_filter: dict = None):
     """Connect retriever to Google Gemini LLM and return RetrievalQA chain."""
-    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
+    api_key = os.getenv("GOOGLE_API_KEY")
+    llm = ChatGoogleGenerativeAI(model=model_name, temperature=0, api_key=api_key)
     
     search_kwargs = {"k": 6}
     if search_filter:
