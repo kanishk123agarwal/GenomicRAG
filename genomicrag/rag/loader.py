@@ -4,7 +4,7 @@ from collections import defaultdict
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 def is_genetics_paper(sample_text: str) -> bool:
     """Use Gemini to check if a research paper belongs to the genetics/genomics domain."""
