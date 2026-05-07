@@ -127,7 +127,7 @@ st.markdown('<p class="subtitle-caption">Ask questions about your genetics resea
 
 # Load existing vectorstore and initialize the RAG chain if available
 if "chain" not in st.session_state:
-    if os.path.exists("vectorstore/faiss_index"):
+    if os.path.exists("vectorstore/store.pkl"):
         vs = load_vectorstore()
         if vs is not None:
             st.session_state.chain = build_chain(vs)
@@ -160,7 +160,7 @@ with st.sidebar:
             chunks, rejected = load_and_chunk_documents("data/papers")
             
         if chunks:
-            with st.spinner("Embedding chunks and building FAISS index..."):
+            with st.spinner("Embedding chunks and building vector index..."):
                 vs = build_vectorstore(chunks)
                 if vs is not None:
                     st.session_state.chain = build_chain(vs)
@@ -182,7 +182,7 @@ with st.sidebar:
     chunks_count = 0
     if "vectorstore" in st.session_state and st.session_state.vectorstore is not None:
         try:
-            chunks_count = st.session_state.vectorstore.index.ntotal
+            chunks_count = len(st.session_state.vectorstore.documents)
         except Exception:
             pass
 

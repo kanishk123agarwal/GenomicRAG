@@ -2,12 +2,7 @@ langchain==0.2.16
 langchain-community==0.2.16
 langchain-google-genai==1.0.8
 langchain-text-splitters==0.2.4
-faiss-cpu==1.14.3
-sentence-transformers==3.0.1
+numpy>=1.26.0
 streamlit==1.38.0
 pypdf==4.3.1
 python-dotenv==1.0.1
-protobuf==4.25.5
-Pillow==10.4.0
-
-
