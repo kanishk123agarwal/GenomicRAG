@@ -177,6 +177,37 @@ with st.sidebar:
         elif not chunks:
             st.error("No valid genetics papers were indexed. Please upload genomics/genetics PDFs.")
 
+    # Configuration controls
+    st.markdown("---")
+    st.markdown('<div class="sidebar-title">⚙️ RAG Configuration</div>', unsafe_allow_html=True)
+    with st.expander("Configure parameters", expanded=True):
+        model_name = st.selectbox(
+            "Gemini Model",
+            ["gemini-flash-latest", "gemini-2.5-flash", "gemini-pro-latest", "gemini-2.0-flash"],
+            index=0,
+            help="Choose the model for Q&A. gemini-flash-latest has a high quota of 1500 requests/day."
+        )
+        detail_level = st.selectbox(
+            "Detail Level",
+            ["Standard Detail", "Large Format (High Detail)", "Concise Summary"],
+            index=0,
+            help="Controls the style, detailedness, and length of the generated response."
+        )
+        k = st.slider(
+            "Chunks per Sub-Query",
+            min_value=1,
+            max_value=10,
+            value=4,
+            help="Number of chunks retrieved from vector storage for each expanded sub-query."
+        )
+        max_chunks = st.slider(
+            "Max Combined Chunks",
+            min_value=2,
+            max_value=25,
+            value=8,
+            help="Max unique documents/chunks to feed into Gemini's context window."
+        )
+
     # Calculate statistics
     papers_count = len(glob.glob("data/papers/*.pdf"))
     chunks_count = 0
@@ -249,14 +280,15 @@ def format_source_content(content: str) -> str:
     return '\n\n'.join(cleaned_paragraphs)
 
 if question:
-    if "chain" in st.session_state and st.session_state.chain is not None:
+    if "vectorstore" in st.session_state and st.session_state.vectorstore is not None:
         with st.spinner("Searching papers & synthesizing answer..."):
             try:
                 # Dynamically compile the correct chain based on selected query scope filter
-                if query_scope != "All Papers" and st.session_state.vectorstore is not None:
+                search_filter = None
+                if query_scope != "All Papers":
                     # Resolve path structure mapping in vector store (relative vs absolute)
                     try:
-                        sample_doc = list(st.session_state.vectorstore.docstore._dict.values())[0]
+                        sample_doc = st.session_state.vectorstore.documents[0]
                         sample_source = sample_doc.metadata.get("source", "")
                         if os.path.isabs(sample_source):
                             source_filter_path = os.path.abspath(os.path.join("data/papers", query_scope))
@@ -265,13 +297,17 @@ if question:
                     except Exception:
                         source_filter_path = os.path.join("data/papers", query_scope)
 
-                    # Build filtered RAG chain
-                    chain_to_use = build_chain(
-                        st.session_state.vectorstore,
-                        search_filter={"source": source_filter_path}
-                    )
-                else:
-                    chain_to_use = st.session_state.chain
+                    search_filter = {"source": source_filter_path}
+
+                # Build chain dynamically using current user configuration
+                chain_to_use = build_chain(
+                    st.session_state.vectorstore,
+                    model_name=model_name,
+                    search_filter=search_filter,
+                    k=k,
+                    max_chunks=max_chunks,
+                    detail_level=detail_level
+                )
 
                 # Run query
                 result = chain_to_use({"question": question})
